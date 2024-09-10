@@ -69,6 +69,50 @@ def values():
     valuesButton.configure(fg_color="#111010")
     gyroButton.configure(fg_color="#000000")
     trajectoryButton.configure(fg_color='#000000')
+
+    accelerationFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
+    accelerationFrame.grid(row=0, columnspan=2, padx=(10, 5), pady=(10, 5))
+
+    velocityFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=590, height=130)
+    velocityFrame.grid(row=0, column=2, columnspan=2, padx=(5, 10), pady=(10, 5))
+
+    llFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=1190, height=60)
+    llFrame.grid(row=1, columnspan=4, padx=(10, 5), pady=(10, 5))
+
+    humidityFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=285, height=130)
+    humidityFrame.grid(row=2, column=0, padx=(5, 5), pady=(10, 5))
+
+    altitudeFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=285, height=130)
+    altitudeFrame.grid(row=2, column=1, padx=(5, 5), pady=(10, 5))
+
+    pressureFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=285, height=130)
+    pressureFrame.grid(row=2, column=2, padx=(5, 10), pady=(10, 5))
+
+    tempratureFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=285, height=130)
+    tempratureFrame.grid(row=2, column=3, padx=(5, 10), pady=(10, 5))
+
+    mfFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=590, height=130)
+    mfFrame.grid(row=3, columnspan=2, padx=(10, 5), pady=(10, 5))
+
+    coFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=285, height=130)
+    coFrame.grid(row=3, column=2, padx=(5, 10), pady=(10, 5))
+
+    h2Frame = ctk.CTkFrame(windowFrame, fg_color="white", width=285, height=130)
+    h2Frame.grid(row=3, column=3, padx=(5, 10), pady=(10, 5))
+
+    logFrame = ctk.CTkFrame(windowFrame, fg_color="white", width=1190, height=160)
+    logFrame.grid(row=4, columnspan=4, padx=(10, 5), pady=(10, 5))
+
+    # data of acceleration frame
+    accelerationFixedLabel = ctk.CTkLabel(accelerationFrame, text="Acceleration", font=("Font Awesome 5 Brands", 30), text_color="white")
+    accelerationFixedLabel.pack(side="top", padx=210, pady=15)
+    accelerationcanvas = ctk.CTkCanvas(accelerationFrame, height=1, width=595, bg="white")
+    accelerationcanvas.pack(side="top")
+    accelerationData = ctk.CTkLabel(accelerationFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30), text_color="white")
+    accelerationData.pack(side="bottom", pady=15)
+
+
+
 def gyro():
     '''Function to bring gyro section as separate window'''
     dashboardButton.configure(fg_color="#000000")
@@ -122,5 +166,7 @@ launchButton.grid(row=4, column=1, padx=10, pady=(5, 5))
 
 tLable = ctk.CTkLabel(optionFrame, text='T -10', font=("Font Awesome 5 Brands", 50))
 tLable.grid(row=5, column=1, padx=10, pady=(150, 5))
+
+
 
 APP.mainloop()
