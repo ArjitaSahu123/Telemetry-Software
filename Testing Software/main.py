@@ -140,7 +140,7 @@ timeLabel = ctk.CTkLabel(titleFrame, text='20:20:20', font=("Font Awesome 5 Bran
 live_Time()
 timeLabel.grid(row=0, column=5, padx=(500,20))
 
-
+'''-------------------------------------Getting Values ---------------------------------------------------------'''
 # String Parsing and filling
 def stringParse(string):
     global Values_Dictionaries
@@ -151,24 +151,51 @@ def stringParse(string):
         Values_Dictionaries[i] = parsed_data[j]
         j+=1
 
+
+# def gettingValues():
+#     global RUNNING_VALUES, RUNNING_DASHBOARD
+#     try:
+#         # ser = serial.Serial('COM3', 9600, timeout=1)
+#         while True:
+#             # data = ser.readline()
+#             data = b'Team_ID,7:5:20,6,8.96,1002.56,23.10,0.00,7:5:20,0.00,0.00,0.00,1,1:2:3,4:5:6,1,0.00,7:8:9,7.44\r\n'
+#             if data:
+#                 stringParse(data)  # Assuming this function exists
+#
+#                 # Safe UI updates
+#                 if APP.winfo_exists() and RUNNING_VALUES:
+#                     APP.after(0, update_labels_safely)
+#                 if APP.winfo_exists() and RUNNING_DASHBOARD:
+#                     APP.after(0)
+#             time.sleep(1)
+#     except serial.SerialException as e:
+#         print(f"Serial connection error: {e}")
+
 def gettingValues():
     global RUNNING_VALUES, RUNNING_DASHBOARD
-    try:
-        # ser = serial.Serial('COM3', 9600, timeout=1)
-        while True:
-            # data = ser.readline()
-            data = b'Team_ID,7:5:20,6,8.96,1002.56,23.10,0.00,7:5:20,0.00,0.00,0.00,1,1:2:3,4:5:6,1,0.00,7:8:9,7.44\r\n'
-            if data:
-                stringParse(data)  # Assuming this function exists
+    while RUNNING_VALUES or RUNNING_DASHBOARD:
+        # Simulate random data
+        Values_Dictionaries['Accelerometer_data'] = f"{random.randint(-10, 10)}:{random.randint(-10, 10)}:{random.randint(-10, 10)}"
+        Values_Dictionaries['Gyro_Spin_Rate'] = f"{random.randint(-5, 5)}:{random.randint(-5, 5)}:{random.randint(-5, 5)}"
+        Values_Dictionaries['Magnetic_Field'] = f"{random.randint(-5, 5)}:{random.randint(-5, 5)}:{random.randint(-5, 5)}"
+        Values_Dictionaries['Altitude'] = f"{random.uniform(0, 100):.2f}"
+        Values_Dictionaries['Temperature'] = f"{random.uniform(15, 35):.2f}"
+        Values_Dictionaries['GNSS_Time'] = time.strftime('%H:%M:%S')
+        Values_Dictionaries['GNSS_Altitude'] = f"{random.uniform(0, 100):.2f}"
+        Values_Dictionaries['GNSS_Sats'] = f"{random.randint(15, 35)}"
+        Values_Dictionaries['GNSS_Latitude'] = f"{random.uniform(-90, 90):.5f}"
+        Values_Dictionaries['GNSS_Longitude'] = f"{random.uniform(-180, 180):.5f}"
+        Values_Dictionaries['Pressure'] = f"{random.uniform(900, 1100):.2f}"
+        Values_Dictionaries['Humidity'] = f"{random.randint(30, 70)}"
+        Values_Dictionaries['CO'] = f"{random.randint(15, 35)}"
 
-                # Safe UI updates
-                if APP.winfo_exists() and RUNNING_VALUES:
-                    APP.after(0, update_labels_safely)
-                if APP.winfo_exists() and RUNNING_DASHBOARD:
-                    APP.after(0)
-            time.sleep(1)
-    except serial.SerialException as e:
-        print(f"Serial connection error: {e}")
+        # Update the GUI safely
+        if APP.winfo_exists() and RUNNING_VALUES:
+            APP.after(0, update_labels_safely)
+        if APP.winfo_exists() and RUNNING_DASHBOARD:
+            APP.after(0)
+
+        time.sleep(1)
 
 '''-------------------------------------DashBoard-------------------------------------------------------------'''
 
@@ -184,7 +211,6 @@ def dashboard():
 
     dashboardButton.configure(fg_color="#111010")
     valuesButton.configure(fg_color="#000000")
-    gyroButton.configure(fg_color="#000000")
     trajectoryButton.configure(fg_color='#000000')
 
     global axes, canvas_list
@@ -249,14 +275,14 @@ def plot_empty_graph(frame, title, ylabel):
 def plot_live_data(ax, canvas, ylabel):
     print(Values_Dictionaries)
     '''Plot live data on the graph after launch using animation'''
-    # x = np.arange(10)
+    # x = np.arange(0, 10, 1)  # Time steps
     x = Values_Dictionaries["GNSS_Time"]
     if ylabel == 'Accelerometer_data':
         val = (Values_Dictionaries['Accelerometer_data']).split(':')
-        y = int(val[2])
+        y = int(val[0])
     elif ylabel == 'Gyro_Spin_Rate':
         val = (Values_Dictionaries['Gyro_Spin_Rate']).split(':')
-        y = int(val[2])
+        y = int(val[0])
     else:
         y = float(Values_Dictionaries[ylabel])
 
@@ -272,44 +298,104 @@ def plot_live_data(ax, canvas, ylabel):
     ani = FuncAnimation(fig, update, interval=1000)
     return ani
 
+#
+# def plot_live_data(ax, canvas, ylabel):
+#     print(Values_Dictionaries)
+#     x_data = np.arange(0, 10, 1)  # Time steps
+#     y_data = np.zeros(10)  # Initialize with zero data
+#
+#     line, = ax.plot(x_data, y_data, linestyle='-', color='cyan', linewidth=2)
+#
+#     def update(frame):
+#         # Shift data left and append new value from Values_Dictionaries
+#         y_data[:-1] = y_data[1:]
+#         y_data[-1] = get_live_value(ylabel)  # Get new value from dictionary
+#
+#         line.set_ydata(y_data)
+#         ax.relim()
+#         ax.autoscale_view()
+#         canvas.draw()
+#
+#     ani = FuncAnimation(ax.figure, update, interval=1000)  # Update every second
+#     return ani
+#
+#
+# def get_live_value(ylabel):
+#     """Fetch live data from Values_Dictionaries based on the data type"""
+#     if ylabel == 'Accelerometer_data':
+#         # Taking the Z-axis value as an example
+#         return float(Values_Dictionaries['Accelerometer_data'].split(':')[2])
+#     elif ylabel == 'Gyro_Spin_Rate':
+#         return float(Values_Dictionaries['Gyro_Spin_Rate'].split(':')[2])
+#     elif ylabel == 'Altitude':
+#         return float(Values_Dictionaries['Altitude'])
+#     elif ylabel == 'Temperature':
+#         return float(Values_Dictionaries['Temperature'])
+#     return 0
+
 
 '''---------------------------------------------------VALUES---------------------------------------------------------'''
 
 # Frames to keep Application Stable
-accelerationFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
-accelerationData = ctk.CTkLabel(accelerationFrame, text=("X : 0 \t Y : 0 \t Z : 0"),font=("Font Awesome 5 Brands", 30), text_color="white")
+accelerationFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=320, height=100)
+# accelerationData = ctk.CTkLabel(accelerationFrame, text=("X : 0 \t Y : 0 \t Z : 0"),font=("Font Awesome 5 Brands", 20), text_color="white")
+accelerationDataX = ctk.CTkLabel(accelerationFrame, text=("X : 0"),font=("Font Awesome 5 Brands", 20), text_color="red")
+accelerationDataY = ctk.CTkLabel(accelerationFrame, text=("Y : 0"),font=("Font Awesome 5 Brands", 20), text_color="green")
+accelerationDataZ = ctk.CTkLabel(accelerationFrame, text=("Z : 0"),font=("Font Awesome 5 Brands", 20), text_color="blue")
 
-velocityFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
-velocityData = ctk.CTkLabel(velocityFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30), text_color="white")
+gnssTimeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=200, height=100)
+gnssTimeFrameData = ctk.CTkLabel(gnssTimeFrame, text=("00:00:00"), font=("Font Awesome 5 Brands", 20), text_color="white")
 
-llFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=1190, height=60)
+gnssSatsFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=200, height=100)
+gnssSatsFrameData = ctk.CTkLabel(gnssTimeFrame, text=("0"), font=("Font Awesome 5 Brands", 20), text_color="white")
+
+gnssAltitudeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=200, height=100)
+gnssAltitudeFrameData = ctk.CTkLabel(gnssTimeFrame, text=("0   m"), font=("Font Awesome 5 Brands", 20), text_color="white")
+
+gyroRateFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
+# gyroRateData = ctk.CTkLabel(gyroRateFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30), text_color="white")
+gyroRateDataX = ctk.CTkLabel(gyroRateFrame, text=("X : 0"), font=("Font Awesome 5 Brands", 20), text_color="red")
+gyroRateDataY = ctk.CTkLabel(gyroRateFrame, text=("Y : 0"), font=("Font Awesome 5 Brands", 20), text_color="green")
+gyroRateDataZ = ctk.CTkLabel(gyroRateFrame, text=("Z : 0"), font=("Font Awesome 5 Brands", 20), text_color="blue")
+
+voltageFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=200, height=100)
+voltageFrameData = ctk.CTkLabel(gnssTimeFrame, text=("00:00:00"), font=("Font Awesome 5 Brands", 20), text_color="white")
+
+packetFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=200, height=100)
+packetFrameData = ctk.CTkLabel(gnssTimeFrame, text=("0"), font=("Font Awesome 5 Brands", 20), text_color="white")
+
+fsStateFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=200, height=100)
+fsStateFrameData = ctk.CTkLabel(gnssTimeFrame, text=("0   m"), font=("Font Awesome 5 Brands", 20), text_color="white")
+
+mfFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=100)
+# mfFrameData = ctk.CTkLabel(mfFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30),text_color="white")
+mfFrameDataX = ctk.CTkLabel(mfFrame, text=("X : 0"), font=("Font Awesome 5 Brands", 30),text_color="red")
+mfFrameDataY = ctk.CTkLabel(mfFrame, text=("Y : 0"), font=("Font Awesome 5 Brands", 30),text_color="green")
+mfFrameDataZ = ctk.CTkLabel(mfFrame, text=("Z : 0"), font=("Font Awesome 5 Brands", 30),text_color="blue")
+
+altitudeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=100)
+altitudeFrameData = ctk.CTkLabel(altitudeFrame, text=("0  ft"), font=("Font Awesome 5 Brands", 30), text_color="white")
+
+pressureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=100)
+pressureFrameData = ctk.CTkLabel(pressureFrame, text=("0  psi"), font=("Font Awesome 5 Brands", 30), text_color="white")
+
+tempratureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=100)
+tempratureFrameData = ctk.CTkLabel(tempratureFrame, text=("0  F"), font=("Font Awesome 5 Brands", 30),text_color="white")
+
+llFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=100)
 longitudeData = ctk.CTkLabel(llFrame, text="000.00000", font=("Font Awesome 5 Brands", 30), text_color="white")
 latitudeData = ctk.CTkLabel(llFrame, text="000.00000", font=("Font Awesome 5 Brands", 30), text_color="white")
 
-humidityFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
+humidityFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=100)
 humidityFrameData = ctk.CTkLabel(humidityFrame, text=("0"), font=("Font Awesome 5 Brands", 30), text_color="white")
 
-altitudeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-altitudeFrameData = ctk.CTkLabel(altitudeFrame, text=("0  ft"), font=("Font Awesome 5 Brands", 30), text_color="white")
-
-pressureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-pressureFrameData = ctk.CTkLabel(pressureFrame, text=("0  psi"), font=("Font Awesome 5 Brands", 30), text_color="white")
-
-tempratureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-tempratureFrameData = ctk.CTkLabel(tempratureFrame, text=("0  F"), font=("Font Awesome 5 Brands", 30),text_color="white")
-
-mfFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
-mfFrameData = ctk.CTkLabel(mfFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30),text_color="white")
-
-coFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
+coFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=100)
 coFrameData = ctk.CTkLabel(coFrame, text=("0  psi"), font=("Font Awesome 5 Brands", 30), text_color="white")
 
-h2Frame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-h2FrameData = ctk.CTkLabel(h2Frame, text=("0  F"), font=("Font Awesome 5 Brands", 30), text_color="white")
-
-logFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=1190, height=160)
+logFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=240)
 logFrameData = ctk.CTkLabel(logFrame, text="No logs yet...", font=("Font Awesome 5 Brands", 20), text_color="white",anchor="nw", justify="left")
 
+Rocket3Dmesh = ctk.CTkFrame(windowFrame, fg_color="#000000", width=570, height=240)
 
 
 # Thread-safe function to update labels
@@ -317,28 +403,35 @@ def update_labels_safely():
     try:
         print("start")
         Accelerometer_data = list(Values_Dictionaries["Accelerometer_data"].split(":"))
-        accelerationData.configure(text=f"X : {Accelerometer_data[0]} \t Y : {Accelerometer_data[1]} \t Z : {Accelerometer_data[2]}")
-        # velocity_data = list(Values_Dictionaries["Velocity_data"].split(":"))
+        accelerationDataX.configure(text=f"X : {Accelerometer_data[0]}")
+        accelerationDataY.configure(text=f"Y : {Accelerometer_data[1]}")
+        accelerationDataZ.configure(text=f"Z : {Accelerometer_data[2]}")
 
+        gyroRate_data = list(Values_Dictionaries["Gyro_Spin_Rate"].split(":"))
+        gyroRateDataX.configure(text=f"X : {gyroRate_data[0]}")
+        gyroRateDataY.configure(text=f"Y : {gyroRate_data[1]}")
+        gyroRateDataZ.configure(text=f"Z : {gyroRate_data[2]}")
+
+        Magnetic_Field = list(Values_Dictionaries['Magnetic_Field'].split(':'))
+        mfFrameDataX.configure(text=f"X : {Magnetic_Field[0]}")
+        mfFrameDataY.configure(text=f"Y : {Magnetic_Field[1]}")
+        mfFrameDataZ.configure(text=f"Z : {Magnetic_Field[2]}")
+
+        gnssTimeFrameData.configure(text=f"{Values_Dictionaries['GNSS_Time']}")
+        gnssSatsFrameData.configure(text=f"{Values_Dictionaries['GNSS_Sats']}")
+        gnssAltitudeFrameData.configure(text=f"{Values_Dictionaries['GNSS_Altitude']}\tm")
         longitudeData.configure(text=f"{Values_Dictionaries['GNSS_Longitude']}")
         latitudeData.configure(text=f"{Values_Dictionaries['GNSS_Latitude']}")
         humidityFrameData.configure(text=f"{Values_Dictionaries['Humidity']}")
-        altitudeFrameData.configure(text=f"{Values_Dictionaries['Altitude']}")
-        pressureFrameData.configure(text=f"{Values_Dictionaries['Pressure']}")
-        tempratureFrameData.configure(text=f"{Values_Dictionaries['Temperature']}")
-        Magnetic_Field = list(Values_Dictionaries['Magnetic_Field'].split(':'))
-        mfFrameData.configure(text=f"X : {Magnetic_Field[0]} \t Y : {Magnetic_Field[1]} \t Z : {Magnetic_Field[2]}")
-        coFrameData.configure(text=f"{Values_Dictionaries['CO']}")
-        h2FrameData.configure(text=f"{0}  F")
+        altitudeFrameData.configure(text=f"{Values_Dictionaries['Altitude']}\tm")
+        pressureFrameData.configure(text=f"{Values_Dictionaries['Pressure']}\tP")
+        tempratureFrameData.configure(text=f"{Values_Dictionaries['Temperature']}\tC")
+        coFrameData.configure(text=f"{Values_Dictionaries['CO']}\tpsi")
+        voltageFrameData.configure(text=f"{0}\tv")
         print("end")
 
-    except ctk.TclError:
-        print("Frame no longer exists. Skipping update.")
-
-
-# Receiving values from Serial
-# data = b'Team_ID,7:5:20,6,8.96,1002.56,23.10,0.00,7:5:20,0.00,0.00,0.00,1,1:2:3,4:5:6,1,0.00,7:8:9,7.44\r\n'
-
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 def values():
     '''
@@ -349,157 +442,239 @@ def values():
     global RUNNING_VALUES, values_filling_thread
     RUNNING_VALUES = True
     clear_frame(windowFrame)  # Assuming this function exists
-    # values_filling_thread = threading.Thread(target=gettingValues, daemon=True)
-    # values_filling_thread.start()
+
 
     # Initialize Values section UI here
     dashboardButton.configure(fg_color="#000000")
     valuesButton.configure(fg_color="#111010")
-    gyroButton.configure(fg_color="#000000")
     trajectoryButton.configure(fg_color='#000000')
 
     # Acceleration Frame and Data
-    global accelerationFrame, accelerationData
-    accelerationFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
-    accelerationFrame.grid(row=0, columnspan=2, padx=(10, 5), pady=(10, 5))
+    global accelerationFrame, accelerationDataX, accelerationDataY, accelerationDataZ
+    accelerationFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=370, height=100)
+    accelerationFrame.grid(row=0, column=0, padx=(10, 2), pady=(10, 5))
 
-    accelerationFixedLabel = ctk.CTkLabel(accelerationFrame, text="Acceleration", font=("Font Awesome 5 Brands", 30),text_color="white")
+    accelerationFixedLabel = ctk.CTkLabel(accelerationFrame, text="Acceleration", font=("Font Awesome 5 Brands", 25),text_color="white")
     accelerationFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    accelerationcanvas = ctk.CTkCanvas(accelerationFrame, height=1, width=595, bg="white")
+    accelerationcanvas = ctk.CTkCanvas(accelerationFrame, height=0.1, width=370, bg="white")
     accelerationcanvas.place(relx=0.5, rely=0.5, anchor="center")
-    accelerationData = ctk.CTkLabel(accelerationFrame, text=("X : 0 \t Y : 0 \t Z : 0"),font=("Font Awesome 5 Brands", 30), text_color="white")  # Data value of Acceleration
-    accelerationData.place(relx=0.5, rely=0.7, anchor="center")
+    # accelerationData = ctk.CTkLabel(accelerationFrame, text=("X : 0 \t Y : 0 \t Z : 0"),font=("Font Awesome 5 Brands", 20), text_color="white")
+    accelerationDataX = ctk.CTkLabel(accelerationFrame, text=("X : 0"),font=("Font Awesome 5 Brands", 20), text_color="red")
+    accelerationDataY = ctk.CTkLabel(accelerationFrame, text=("Y : 0"),font=("Font Awesome 5 Brands", 20), text_color="green")
+    accelerationDataZ = ctk.CTkLabel(accelerationFrame, text=("Z : 0"),font=("Font Awesome 5 Brands", 20), text_color="blue")
+    # accelerationData.place(relx=0.5, rely=0.7, anchor="center")
+    accelerationDataX.place(relx=0.2, rely=0.7, anchor="w")
+    accelerationDataY.place(relx=0.5, rely=0.7, anchor="center")
+    accelerationDataZ.place(relx=0.8, rely=0.7, anchor="e")
 
-    # Velocity Frame and Data
-    global velocityFrame, velocityData
-    velocityFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
-    velocityFrame.grid(row=0, column=2, columnspan=2, padx=(5, 10), pady=(10, 5))
+    # GNSS time frame
+    global gnssTimeFrame, gnssTimeFrameData
+    gnssTimeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    gnssTimeFrame.grid(row=0, column=1, padx=(5, 2), pady=(10, 5))
 
-    velocityFixedLabel = ctk.CTkLabel(velocityFrame, text="Velocity", font=("Font Awesome 5 Brands", 30), text_color="white")
-    velocityFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    velocitycanvas = ctk.CTkCanvas(velocityFrame, height=1, width=595, bg="white")
-    velocitycanvas.place(relx=0.5, rely=0.5, anchor="center")
-    velocityData = ctk.CTkLabel(velocityFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30), text_color="white")
-    velocityData.place(relx=0.5, rely=0.7, anchor="center")
+    gnssTimeFrameFixedLabel = ctk.CTkLabel(gnssTimeFrame, text="Gnss Time", font=("Font Awesome 5 Brands", 25), text_color="white")
+    gnssTimeFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    gnssTimeFramecanvas = ctk.CTkCanvas(gnssTimeFrame, height=0.1, width=270, bg="white")
+    gnssTimeFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    gnssTimeFrameData = ctk.CTkLabel(gnssTimeFrame, text=("00:00:00"), font=("Font Awesome 5 Brands", 20), text_color="white")
+    gnssTimeFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
-    global llFrame, longitudeData, latitudeData
-    llFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=1190, height=60)
-    llFrame.grid(row=1, columnspan=4, padx=(10, 5), pady=(10, 5))
+    # GNSS Sats frame
+    global gnssSatsFrame, gnssSatsFrameData
+    gnssSatsFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    gnssSatsFrame.grid(row=0, column=2, padx=(5, 2), pady=(10, 5))
 
-    longitudeLabel = ctk.CTkLabel(llFrame, text="Longitude :", font=("Font Awesome 5 Brands", 30), text_color="white")
-    longitudeLabel.place(relx=0.04, rely=0.25)
-    longitudeData = ctk.CTkLabel(llFrame, text="000.00000", font=("Font Awesome 5 Brands", 30), text_color="white")
-    longitudeData.place(relx=0.18, rely=0.25)
-    latitudeLabel = ctk.CTkLabel(llFrame, text="Latitude :", font=("Font Awesome 5 Brands", 30), text_color="white")
-    latitudeLabel.place(relx=0.55, rely=0.25)
-    latitudeData = ctk.CTkLabel(llFrame, text="000.00000", font=("Font Awesome 5 Brands", 30), text_color="white")
-    latitudeData.place(relx=0.67, rely=0.25)
+    gnssSatsFrameFixedLabel = ctk.CTkLabel(gnssSatsFrame, text="Gnss Sats", font=("Font Awesome 5 Brands", 25), text_color="white")
+    gnssSatsFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    gnssSatsFramecanvas = ctk.CTkCanvas(gnssSatsFrame, height=0.1, width=270, bg="white")
+    gnssSatsFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    gnssSatsFrameData = ctk.CTkLabel(gnssSatsFrame, text=("0"), font=("Font Awesome 5 Brands", 20), text_color="white")
+    gnssSatsFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
-    global humidityFrame, humidityFrameData
-    humidityFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-    humidityFrame.grid(row=2, column=0, padx=(5, 5), pady=(10, 5))
+    # GNSS Altitude frame
+    global gnssAltitudeFrame, gnssAltitudeFrameData
+    gnssAltitudeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    gnssAltitudeFrame.grid(row=0, column=3, padx=(5, 5), pady=(10, 5))
 
-    humidityFrameFixedLabel = ctk.CTkLabel(humidityFrame, text="Humidity", font=("Font Awesome 5 Brands", 30), text_color="white")
-    humidityFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    humidityFramecanvas = ctk.CTkCanvas(humidityFrame, height=1, width=285, bg="white")
-    humidityFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    humidityFrameData = ctk.CTkLabel(humidityFrame, text=("0"), font=("Font Awesome 5 Brands", 30), text_color="white")
-    humidityFrameData.place(relx=0.5, rely=0.7, anchor="center")
+    gnssAltitudeFrameFixedLabel = ctk.CTkLabel(gnssAltitudeFrame, text="Gnss Altitude",
+                                               font=("Font Awesome 5 Brands", 25), text_color="white")
+    gnssAltitudeFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    gnssAltitudeFramecanvas = ctk.CTkCanvas(gnssAltitudeFrame, height=0.1, width=270, bg="white")
+    gnssAltitudeFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    gnssAltitudeFrameData = ctk.CTkLabel(gnssAltitudeFrame, text=("0"), font=("Font Awesome 5 Brands", 20),
+                                         text_color="white")
+    gnssAltitudeFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
+    # gyroRate Frame and Data
+    global gyroRateFrame, gyroRateDataX, gyroRateDataY, gyroRateDataZ
+    gyroRateFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=370, height=100)
+    gyroRateFrame.grid(row=1, column=0, padx=(10, 2), pady=(5, 5))
+
+    gyroRateFixedLabel = ctk.CTkLabel(gyroRateFrame, text="Gyro-Rate", font=("Font Awesome 5 Brands", 25), text_color="white")
+    gyroRateFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    gyroRatecanvas = ctk.CTkCanvas(gyroRateFrame, height=0.1, width=370, bg="white")
+    gyroRatecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    # gyroRateData = ctk.CTkLabel(gyroRateFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 20), text_color="white")
+    gyroRateDataX = ctk.CTkLabel(gyroRateFrame, text=("X : 0"), font=("Font Awesome 5 Brands", 20), text_color="red")
+    gyroRateDataY = ctk.CTkLabel(gyroRateFrame, text=("Y : 0"), font=("Font Awesome 5 Brands", 20), text_color="green")
+    gyroRateDataZ = ctk.CTkLabel(gyroRateFrame, text=("Z : 0"), font=("Font Awesome 5 Brands", 20), text_color="blue")
+    # gyroRateData.place(relx=0.5, rely=0.7, anchor="center")
+    gyroRateDataX.place(relx=0.2, rely=0.7, anchor="w")
+    gyroRateDataY.place(relx=0.5, rely=0.7, anchor="center")
+    gyroRateDataZ.place(relx=0.8, rely=0.7, anchor="e")
+
+    # Voltage frame
+    global voltageFrame, voltageFrameData
+    voltageFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    voltageFrame.grid(row=1, column=1, padx=(5, 2), pady=(5, 5))
+
+    voltageFrameFixedLabel = ctk.CTkLabel(voltageFrame, text="Voltage", font=("Font Awesome 5 Brands", 25), text_color="white")
+    voltageFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    voltageFramecanvas = ctk.CTkCanvas(voltageFrame, height=0.1, width=270, bg="white")
+    voltageFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    voltageFrameData = ctk.CTkLabel(voltageFrame, text=("0    v"), font=("Font Awesome 5 Brands", 20), text_color="white")
+    voltageFrameData.place(relx=0.5, rely=0.7, anchor="center")
+
+    # Packet Count frame
+    global packetFrame, packetFrameData
+    packetFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    packetFrame.grid(row=1, column=2, padx=(5, 2), pady=(5, 5))
+
+    packetFrameFixedLabel = ctk.CTkLabel(packetFrame, text="Packet Count", font=("Font Awesome 5 Brands", 25),
+                                           text_color="white")
+    packetFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    packetFramecanvas = ctk.CTkCanvas(packetFrame, height=0.1, width=270, bg="white")
+    packetFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    packetFrameData = ctk.CTkLabel(packetFrame, text=("0"), font=("Font Awesome 5 Brands", 20), text_color="white")
+    packetFrameData.place(relx=0.5, rely=0.7, anchor="center")
+
+    # Flight Software State frame
+    global fsStateFrame, fsStateFrameData
+    fsStateFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    fsStateFrame.grid(row=1, column=3, padx=(5, 5), pady=(5, 5))
+
+    fsStateFrameFixedLabel = ctk.CTkLabel(fsStateFrame, text="FS State",
+                                               font=("Font Awesome 5 Brands", 25), text_color="white")
+    fsStateFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    fsStateFramecanvas = ctk.CTkCanvas(fsStateFrame, height=0.1, width=270, bg="white")
+    fsStateFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    fsStateFrameData = ctk.CTkLabel(fsStateFrame, text=("0"), font=("Font Awesome 5 Brands", 20),
+                                         text_color="white")
+    fsStateFrameData.place(relx=0.5, rely=0.7, anchor="center")
+
+    # Magnetic field frame
+    global mfFrame, mfFrameDataX, mfFrameDataY, mfFrameDataZ
+    mfFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=370, height=100)
+    mfFrame.grid(row=2, column=0, padx=(10, 2), pady=(5, 5))
+
+    mfFrameFixedLabel = ctk.CTkLabel(mfFrame, text="Magnetic Field", font=("Font Awesome 5 Brands", 25),text_color="white")
+    mfFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    mfFramecanvas = ctk.CTkCanvas(mfFrame, height=0.1, width=370, bg="white")
+    mfFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    # mfFrameData = ctk.CTkLabel(mfFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 20),text_color="white")
+    mfFrameDataX = ctk.CTkLabel(mfFrame, text=("X : 0"), font=("Font Awesome 5 Brands", 20),text_color="red")
+    mfFrameDataY = ctk.CTkLabel(mfFrame, text=("Y : 0"), font=("Font Awesome 5 Brands", 20),text_color="green")
+    mfFrameDataZ = ctk.CTkLabel(mfFrame, text=("Z : 0"), font=("Font Awesome 5 Brands", 20),text_color="blue")
+    # mfFrameData.place(relx=0.5, rely=0.7, anchor="center")
+    mfFrameDataX.place(relx=0.2, rely=0.7, anchor="w")
+    mfFrameDataY.place(relx=0.5, rely=0.7, anchor="center")
+    mfFrameDataZ.place(relx=0.8, rely=0.7, anchor="e")
+
+    # Altitude frame
     global altitudeFrame, altitudeFrameData
-    altitudeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-    altitudeFrame.grid(row=2, column=1, padx=(5, 5), pady=(10, 5))
+    altitudeFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    altitudeFrame.grid(row=2, column=1, padx=(5, 2), pady=(5, 5))
 
-    altitudeFrameFixedLabel = ctk.CTkLabel(altitudeFrame, text="Altitude", font=("Font Awesome 5 Brands", 30), text_color="white")
+    altitudeFrameFixedLabel = ctk.CTkLabel(altitudeFrame, text="Altitude", font=("Font Awesome 5 Brands", 25), text_color="white")
     altitudeFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    altitudeFramecanvas = ctk.CTkCanvas(altitudeFrame, height=1, width=285, bg="white")
+    altitudeFramecanvas = ctk.CTkCanvas(altitudeFrame, height=0.1, width=270, bg="white")
     altitudeFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    altitudeFrameData = ctk.CTkLabel(altitudeFrame, text=("0  ft"), font=("Font Awesome 5 Brands", 30), text_color="white")
+    altitudeFrameData = ctk.CTkLabel(altitudeFrame, text=("0  m"), font=("Font Awesome 5 Brands", 20), text_color="white")
     altitudeFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
+    # Pressure frame
     global pressureFrame, pressureFrameData
-    pressureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-    pressureFrame.grid(row=2, column=2, padx=(5, 10), pady=(10, 5))
+    pressureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    pressureFrame.grid(row=2, column=2, padx=(5, 2), pady=(5, 5))
 
-    pressureFrameFixedLabel = ctk.CTkLabel(pressureFrame, text="Pressure", font=("Font Awesome 5 Brands", 30),text_color="white")
+    pressureFrameFixedLabel = ctk.CTkLabel(pressureFrame, text="Pressure", font=("Font Awesome 5 Brands", 25),text_color="white")
     pressureFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    pressureFramecanvas = ctk.CTkCanvas(pressureFrame, height=1, width=285, bg="white")
+    pressureFramecanvas = ctk.CTkCanvas(pressureFrame, height=0.1, width=270, bg="white")
     pressureFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    pressureFrameData = ctk.CTkLabel(pressureFrame, text=("0  psi"), font=("Font Awesome 5 Brands", 30), text_color="white")
+    pressureFrameData = ctk.CTkLabel(pressureFrame, text=("0  P"), font=("Font Awesome 5 Brands", 20), text_color="white")
     pressureFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
+    # Temperature Frame
     global temperatureFrame, tempratureFrameData
-    tempratureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-    tempratureFrame.grid(row=2, column=3, padx=(5, 10), pady=(10, 5))
+    tempratureFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    tempratureFrame.grid(row=2, column=3, padx=(5, 2), pady=(5, 5))
 
-    tempratureFrameFixedLabel = ctk.CTkLabel(tempratureFrame, text="Temperature", font=("Font Awesome 5 Brands", 30), text_color="white")
+    tempratureFrameFixedLabel = ctk.CTkLabel(tempratureFrame, text="Temperature", font=("Font Awesome 5 Brands", 25), text_color="white")
     tempratureFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    tempratureFramecanvas = ctk.CTkCanvas(tempratureFrame, height=1, width=285, bg="white")
+    tempratureFramecanvas = ctk.CTkCanvas(tempratureFrame, height=0.1, width=270, bg="white")
     tempratureFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    tempratureFrameData = ctk.CTkLabel(tempratureFrame, text=("0  F"), font=("Font Awesome 5 Brands", 30), text_color="white")
+    tempratureFrameData = ctk.CTkLabel(tempratureFrame, text=("0  C"), font=("Font Awesome 5 Brands", 20), text_color="white")
     tempratureFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
-    global mfFrame, mfFrameData
-    mfFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=130)
-    mfFrame.grid(row=3, columnspan=2, padx=(10, 5), pady=(10, 5))
+    # Longitude Latutude frame
+    global llFrame, longitudeData, latitudeData
+    llFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=650, height=100)
+    llFrame.grid(row=3, columnspan=2, column=0, padx=(10, 2), pady=(5, 5))
 
-    mfFrameFixedLabel = ctk.CTkLabel(mfFrame, text="Magnetic Field", font=("Font Awesome 5 Brands", 30),text_color="white")
-    mfFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    mfFramecanvas = ctk.CTkCanvas(mfFrame, height=1, width=590, bg="white")
-    mfFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    mfFrameData = ctk.CTkLabel(mfFrame, text=("X : 0 \t Y : 0 \t Z : 0"), font=("Font Awesome 5 Brands", 30),text_color="white")
-    mfFrameData.place(relx=0.5, rely=0.7, anchor="center")
+    longitudeLabel = ctk.CTkLabel(llFrame, text="Longitude :", font=("Font Awesome 5 Brands", 25), text_color="white")
+    longitudeLabel.place(relx=0.08, rely=0.23)
+    longitudeData = ctk.CTkLabel(llFrame, text="000.00000", font=("Font Awesome 5 Brands", 25), text_color="white")
+    longitudeData.place(relx=0.3, rely=0.23)
+    latitudeLabel = ctk.CTkLabel(llFrame, text="Latitude :", font=("Font Awesome 5 Brands", 25), text_color="white")
+    latitudeLabel.place(relx=0.08, rely=0.52)
+    latitudeData = ctk.CTkLabel(llFrame, text="000.00000", font=("Font Awesome 5 Brands", 25), text_color="white")
+    latitudeData.place(relx=0.3, rely=0.52)
+
+    global humidityFrame, humidityFrameData
+    humidityFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    humidityFrame.grid(row=3, column=2, padx=(5, 2), pady=(5, 5))
+
+    humidityFrameFixedLabel = ctk.CTkLabel(humidityFrame, text="Humidity", font=("Font Awesome 5 Brands", 25), text_color="white")
+    humidityFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
+    humidityFramecanvas = ctk.CTkCanvas(humidityFrame, height=0.1, width=270, bg="white")
+    humidityFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
+    humidityFrameData = ctk.CTkLabel(humidityFrame, text=("0"), font=("Font Awesome 5 Brands", 20), text_color="white")
+    humidityFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
     global coFrame, coFrameData
-    coFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-    coFrame.grid(row=3, column=2, padx=(5, 10), pady=(10, 5))
+    coFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=270, height=100)
+    coFrame.grid(row=3, column=3, padx=(5, 2), pady=(5, 5))
 
-    coFrameFixedLabel = ctk.CTkLabel(coFrame, text="CO", font=("Font Awesome 5 Brands", 30), text_color="white")
+    coFrameFixedLabel = ctk.CTkLabel(coFrame, text="CO", font=("Font Awesome 5 Brands", 25), text_color="white")
     coFrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    coFramecanvas = ctk.CTkCanvas(coFrame, height=1, width=285, bg="white")
+    coFramecanvas = ctk.CTkCanvas(coFrame, height=0.1, width=270, bg="white")
     coFramecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    coFrameData = ctk.CTkLabel(coFrame, text=("0  psi"), font=("Font Awesome 5 Brands", 30), text_color="white")
+    coFrameData = ctk.CTkLabel(coFrame, text=("0  psi"), font=("Font Awesome 5 Brands", 20), text_color="white")
     coFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
-    global h2Frame, h2FrameData
-    h2Frame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=285, height=130)
-    h2Frame.grid(row=3, column=3, padx=(5, 10), pady=(10, 5))
-
-    h2FrameFixedLabel = ctk.CTkLabel(h2Frame, text="H2", font=("Font Awesome 5 Brands", 30), text_color="white")
-    h2FrameFixedLabel.place(relx=0.5, rely=0.3, anchor="center")
-    h2Framecanvas = ctk.CTkCanvas(h2Frame, height=1, width=285, bg="white")
-    h2Framecanvas.place(relx=0.5, rely=0.5, anchor="center")
-    h2FrameData = ctk.CTkLabel(h2Frame, text=("0  F"), font=("Font Awesome 5 Brands", 30), text_color="white")
-    h2FrameData.place(relx=0.5, rely=0.7, anchor="center")
-
     global logFrame, logFrameData
-    logFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=1190, height=160)
-    logFrame.grid(row=4, columnspan=4, padx=(10, 5), pady=(10, 5))
+    logFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=650, height=240)
+    logFrame.grid(row=4, columnspan=2, padx=(10, 2), pady=(5, 10))
 
     # Title for the Log Frame (Log Packet) on the extreme left
-    logFrameFixedLabel = ctk.CTkLabel(logFrame, text="Log", font=("Font Awesome 5 Brands", 30), text_color="white",anchor="w", justify="left")
-    logFrameFixedLabel.place(relx=0.1, rely=0.2, anchor="center")  # anchor and padding adjusted
+    logFrameFixedLabel = ctk.CTkLabel(logFrame, text="Log", font=("Font Awesome 5 Brands", 25), text_color="white",anchor="w", justify="left")
+    logFrameFixedLabel.place(relx=0.1, rely=0.12, anchor="center")  # anchor and padding adjusted
     # Removed the Canvas for a horizontal line
-    logFrameCanvas = ctk.CTkCanvas(logFrame, height=1, width=1290, bg="black")
-    logFrameCanvas.place(relx=0.5, rely=0.33, anchor="center")
+    logFrameCanvas = ctk.CTkCanvas(logFrame, height=0.1, width=750, bg="white")
+    logFrameCanvas.place(relx=0.5, rely=0.22, anchor="center")
     # Multi-line log display (using a label to show the log data)
     logFrameData = ctk.CTkLabel(logFrame, text="No logs yet...", font=("Font Awesome 5 Brands", 20), text_color="white",anchor="nw", justify="left")
     logFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
-'''-----------------------------------------------------------------------------------------------------------------'''
-def gyro():
-    '''Function to bring gyro section as separate window'''
-    dashboardButton.configure(fg_color="#000000")
-    valuesButton.configure(fg_color="#000000")
-    gyroButton.configure(fg_color="#111010")
-    trajectoryButton.configure(fg_color='#000000')
+    global Rocket3Dmesh
+    Rocket3Dmesh = ctk.CTkFrame(windowFrame, fg_color="#000000", width=550, height=240)
+    Rocket3Dmesh.grid(row=4, columnspan=2,column=2, padx=(5, 2), pady=(5, 10))
 
 '''----------------------------------------------------------------------------------------------------------------'''
 def trajectory():
     '''Function to bring gyro section as separate window'''
     dashboardButton.configure(fg_color="#000000")
     valuesButton.configure(fg_color="#000000")
-    gyroButton.configure(fg_color="#000000")
     trajectoryButton.configure(fg_color='#111010')
 
     # Function to execute index.py and open output.html
@@ -535,15 +710,19 @@ values_filling_thread = threading.Thread(target=gettingValues, daemon=True)
 
 def launch():
     '''To Launch the rocket and start the time button'''
-    global counter_thred
+    global counter_thred, values_filling_thread
+
+    # Check if Dashboard or Values has been clicked
+    if not (RUNNING_VALUES or RUNNING_DASHBOARD):
+        # Default to Dashboard if neither has been initialized
+        dashboard()  # or values() if you want to default to the Values view
 
     statusVariableLabel.configure(text='Launching', text_color="#ABFFA9")
-    launchButton.configure(state=ctk.DISABLED, text_color="Green")
+    launchButton.configure(state=ctk.DISABLED, text='Unlink', text_color="Green")
 
     # Thread started for counter
     counter_thred.start()
     values_filling_thread.start()
-
 
     # Set up live plotting
     for i, (ax, canvas) in enumerate(zip(axes, canvas_list)):
@@ -551,6 +730,11 @@ def launch():
         ani = plot_live_data(ax, canvas, ylabel)
         ani_list.append(ani)  # Keep reference to animations
         canvas.draw()
+
+def unlink():
+    '''To Stop Data from receiving means Delinking from Ground Control'''
+
+
 
 
 # Buttons
@@ -561,14 +745,11 @@ dashboardButton.grid(row=0, column=1, padx=10, pady=(25, 5))
 valuesButton = ctk.CTkButton(optionFrame, width=290, height=80, text='Values', font=("Font Awesome 5 Brands", 30), fg_color='#000', hover_color='#111010', corner_radius=20, command=values)
 valuesButton.grid(row=1, column=1, padx=10, pady=(5, 5))
 
-gyroButton = ctk.CTkButton(optionFrame, width=290, height=80, text='Gyro Visuals', font=("Font Awesome 5 Brands", 30), fg_color='#000', hover_color='#111010', corner_radius=20, command=gyro)
-gyroButton.grid(row=2, column=1, padx=10, pady=(5, 5))
-
 trajectoryButton = ctk.CTkButton(optionFrame, width=290, height=80, text='Trajectory', font=("Font Awesome 5 Brands", 30), fg_color='#000', hover_color='#111010', corner_radius=20, command=trajectory)
-trajectoryButton.grid(row=3, column=1, padx=10, pady=(5, 5))
+trajectoryButton.grid(row=2, column=1, padx=10, pady=(5, 5))
 
-launchButton = ctk.CTkButton(optionFrame, width=290, height=80, text='Launch', text_color='red', font=("Font Awesome 5 Brands", 30), fg_color='#000', hover_color='#111010', corner_radius=20, command=launch)
-launchButton.grid(row=4, column=1, padx=10, pady=(5, 5))
+launchButton = ctk.CTkButton(optionFrame, width=290, height=80, text='Link', text_color='red', font=("Font Awesome 5 Brands", 30), fg_color='#000', hover_color='#111010', corner_radius=20, command=launch)
+launchButton.grid(row=3, column=1, padx=10, pady=(5, 5))
 
 tLable = ctk.CTkLabel(optionFrame, text='T 0', font=("Font Awesome 5 Brands", 50))
 tLable.grid(row=5, column=1, padx=10, pady=(150, 5))
