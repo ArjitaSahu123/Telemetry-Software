@@ -193,7 +193,7 @@ def gettingValues():
         if APP.winfo_exists() and RUNNING_VALUES:
             APP.after(0, update_labels_safely)
         if APP.winfo_exists() and RUNNING_DASHBOARD:
-            APP.after(0)
+            APP.after(0, update_graph)
 
         time.sleep(1)
 
@@ -246,6 +246,15 @@ def dashboard():
     plot_empty_graph(graph_frames[3], 'Temperature', 'Temperature (°C)')
 
     # Restart live plotting if it's already launched
+    if ani_list:  # Check if the launch has already started
+        for i, (ax, canvas) in enumerate(zip(axes, canvas_list)):
+            ylabel = 'Accelerometer_data' if i == 0 else 'Gyro_Spin_Rate' if i == 1 else 'Altitude' if i == 2 else 'Temperature'
+            ani = plot_live_data(ax, canvas, ylabel)
+            ani_list.append(ani)  # Keep reference to animations
+
+
+def update_graph():
+    global ani_list
     if ani_list:  # Check if the launch has already started
         for i, (ax, canvas) in enumerate(zip(axes, canvas_list)):
             ylabel = 'Accelerometer_data' if i == 0 else 'Gyro_Spin_Rate' if i == 1 else 'Altitude' if i == 2 else 'Temperature'
