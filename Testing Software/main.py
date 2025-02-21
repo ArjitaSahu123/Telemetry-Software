@@ -7,6 +7,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from sys import exit
+from tkintermapview import TkinterMapView
+import importlib
 import os
 import subprocess
 import webbrowser
@@ -96,7 +98,9 @@ height = APP.winfo_screenheight()
 
 APP.after(1, APP.wm_state, 'zoomed')
 APP.title("Team Sudarshan Ground Control")
-APP.iconbitmap(r"C:\Users\Arjita\Documents\GitHub\Rocketry_Software_and_Hardware\Design\Sudarsan.png")
+
+APP.iconbitmap(r"Testing Software\sudarshan.ico")
+
 
 # Set the background color for the entire window
 APP.configure(fg_color="#111010")
@@ -181,6 +185,7 @@ def gettingValues():
         Values_Dictionaries['Altitude'] = f"{random.uniform(0, 100):.2f}"
         Values_Dictionaries['Temperature'] = f"{random.uniform(15, 35):.2f}"
         Values_Dictionaries['GNSS_Time'] = time.strftime('%H:%M:%S')
+        Values_Dictionaries['TimeStamp'] = time.strftime('%Y-%m-%d %H:%M:%S')
         Values_Dictionaries['GNSS_Altitude'] = f"{random.uniform(0, 100):.2f}"
         Values_Dictionaries['GNSS_Sats'] = f"{random.randint(15, 35)}"
         Values_Dictionaries['GNSS_Latitude'] = f"{random.uniform(-90, 90):.5f}"
@@ -423,7 +428,7 @@ coFrameData = ctk.CTkLabel(coFrame, text=("0  psi"), font=("Font Awesome 5 Brand
 logFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=590, height=240)
 logFrameData = ctk.CTkLabel(logFrame, text="No logs yet...", font=("Font Awesome 5 Brands", 20), text_color="white",anchor="nw", justify="left")
 
-Rocket3Dmesh = ctk.CTkFrame(windowFrame, fg_color="#000000", width=570, height=240)
+trajectoryFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=570, height=240)
 
 
 # Thread-safe function to update labels
@@ -694,29 +699,110 @@ def values():
     logFrameData = ctk.CTkLabel(logFrame, text="No logs yet...", font=("Font Awesome 5 Brands", 20), text_color="white",anchor="nw", justify="left")
     logFrameData.place(relx=0.5, rely=0.7, anchor="center")
 
-    global Rocket3Dmesh
-    Rocket3Dmesh = ctk.CTkFrame(windowFrame, fg_color="#000000", width=550, height=240)
-    Rocket3Dmesh.grid(row=4, columnspan=2,column=2, padx=(5, 2), pady=(5, 10))
+    global trajectoryFrame
+    trajectoryFrame = ctk.CTkFrame(windowFrame, fg_color="#000000", width=550, height=240)
+    trajectoryFrame.grid(row=4, columnspan=2,column=2, padx=(5, 2), pady=(5, 10))
 
 '''----------------------------------------------------------------------------------------------------------------'''
+
+# Lists to store past trajectory and timestamps
+trajectory_data = []
+timestamps_data = []
+
+def get_trajectory_data():
+    
+    try:
+        
+        timestamp = Values_Dictionaries["TimeStamp"]
+        lat = Values_Dictionaries["GNSS_Latitude"]
+        lon = Values_Dictionaries["GNSS_Longitude"]
+        print(f"timestamp: {timestamp}, lat: {lat}, lon: {lon}")
+        if not timestamp or not lat or not lon:
+            print("Warning: Missing lat, lon, or timestamp. Returning empty list.")
+            return [], []
+        
+        return [(float(lat), float(lon))], [timestamp]
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return [], []
+    
 def trajectory():
-    '''Function to bring gyro section as separate window'''
+    """
+    Function to display the trajectory of the satellite on the map.
+    """
+    global trajectory_data, timestamps_data
+    
     dashboardButton.configure(fg_color="#000000")
     valuesButton.configure(fg_color="#000000")
     trajectoryButton.configure(fg_color='#111010')
 
-    # Function to execute index.py and open output.html
-    def execute_and_open():
-        # Run index.py to generate output.html
-        subprocess.run(["python", "index.py"])
+    global trajectoryFrame
+    # Create a TkinterMapView widget.
+    map_widget = TkinterMapView(trajectoryFrame, width=700, height=320, corner_radius=0)
+    map_widget.pack(fill="both", expand=True)
 
-        # Get the path of output.html
-        output_file_path = os.path.join(os.getcwd(), "output.html")
+    # Set an initial zoom level.
+    map_widget.set_zoom(16) 
 
-        # Open output.html in the default web browser
-        webbrowser.open(f"file://{output_file_path}")
+    # Set the initial map position.
+    trajectory, timestamps = get_trajectory_data()
+    if trajectory:
+        init_lat, init_lon = trajectory[-1]
+    else:
+        # Default to coordinates for Delhi
+        init_lat = 28.7041
+        init_lon = 77.1025
 
-    execute_and_open()
+    map_widget.set_position(init_lat, init_lon)
+
+    markers = []
+
+    def update_map():
+        global trajectory_data, timestamps_data
+        print("update_map called!!!!")
+        new_trajectory, new_timestamps = get_trajectory_data()
+        if new_trajectory and new_timestamps and len(new_trajectory) == len(new_timestamps):
+            # Append new data to the past data lists
+            trajectory_data.extend(new_trajectory)
+            timestamps_data.extend(new_timestamps)
+
+            # Center the map on the most recent position
+            lat, lon = trajectory_data[-1]
+            map_widget.set_position(lat, lon)
+            marker = map_widget.set_marker(lat, lon)
+            
+            # Remove previous markers.
+            for marker in markers:
+                marker.delete()
+            markers.clear()
+
+            # Draw a polyline connecting the trajectory points if there are at least two points
+            if len(trajectory_data) > 1:
+                map_widget.set_path(trajectory_data)
+            else:
+                print("Not enough data points to draw a path.")
+        else:
+            print("No valid trajectory and timestamp data to update the map.")
+
+        # Schedule the next update
+        APP.after(1000, update_map)
+
+    # Start the first update after a short delay.
+    APP.after(1000, update_map)
+
+
+    # # Function to execute index.py and open output.html
+    # def execute_and_open():
+    #     # Run index.py to generate output.html
+    #     subprocess.run(["python", "index.py"])
+
+    #     # Get the path of output.html
+    #     output_file_path = os.path.join(os.getcwd(), "output.html")
+
+    #     # Open output.html in the default web browser
+    #     webbrowser.open(f"file://{output_file_path}")
+
+    # execute_and_open()
 
 '''-----------------------------------------------------------------------------------------------------------------'''
 # Counter time
