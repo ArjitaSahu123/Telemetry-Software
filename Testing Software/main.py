@@ -98,7 +98,9 @@ height = APP.winfo_screenheight()
 
 APP.after(1, APP.wm_state, 'zoomed')
 APP.title("Team Sudarshan Ground Control")
+
 APP.iconbitmap(r"Testing Software\sudarshan.ico")
+
 
 # Set the background color for the entire window
 APP.configure(fg_color="#111010")
@@ -196,42 +198,36 @@ def gettingValues():
         if APP.winfo_exists() and RUNNING_VALUES:
             APP.after(0, update_labels_safely)
         if APP.winfo_exists() and RUNNING_DASHBOARD:
-            APP.after(0, update_graph)
+            APP.after(0, lambda: update_graph(axes))
 
         time.sleep(1)
 
 '''-------------------------------------DashBoard-------------------------------------------------------------'''
 
+real_time_data = {
+    "velocity": [],
+    "pressure": [],
+    "temperature": [],
+    "accelerometer": [],
+    "time": []  # Common time axis
+}
 
 def dashboard():
-    '''Function to bring dashboard in window frame'''
-
-    stop_background_threads()  # Stop threads before switching
+    """Main dashboard function to initialize graphs"""
+    stop_background_threads()
     global RUNNING_DASHBOARD, dashboard_thread
     RUNNING_DASHBOARD = True
-    clear_frame(windowFrame)  # Assuming this function exists
-
-
+    clear_frame(windowFrame)
+    
     dashboardButton.configure(fg_color="#111010")
     valuesButton.configure(fg_color="#000000")
     trajectoryButton.configure(fg_color='#000000')
-
+    
     global axes, canvas_list
     axes, canvas_list = [], []
-
-    # Reinitialize graph_frames as it is emptied earlier
-    graph_frames = []
-
-    # Destroy any existing graph frames to avoid TclError when switching views
-    for frame in graph_frames:
-        frame.destroy()
-
-    # Creating empty frames for graphs
-    for i in range(4):
-        frame = ctk.CTkFrame(windowFrame, fg_color='#222222', corner_radius=15)
-        graph_frames.append(frame)
-
-    # Layout for the frames (2x2 grid)
+    
+    graph_frames = [ctk.CTkFrame(windowFrame, fg_color='#222222', corner_radius=15) for _ in range(4)]
+    
     graph_frames[0].grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
     graph_frames[1].grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
     graph_frames[2].grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
@@ -242,72 +238,97 @@ def dashboard():
     windowFrame.grid_columnconfigure(0, weight=1)
     windowFrame.grid_columnconfigure(1, weight=1)
 
-    # Plot empty graphs (no data yet)
-    plot_empty_graph(graph_frames[0], 'Acceleration', 'Accelerometer_data (m/s²)')
-    plot_empty_graph(graph_frames[1], 'Gyro_Spin_Rate', 'Gyro_Spin_Rate (km/h)')
-    plot_empty_graph(graph_frames[2], 'Altitude', 'Altitude (m)')
-    plot_empty_graph(graph_frames[3], 'Temperature', 'Temperature (°C)')
-
-    # Restart live plotting if it's already launched
-    if ani_list:  # Check if the launch has already started
+    plot_empty_graph(graph_frames[0], 'Velocity', 'Velocity (m/s)')
+    plot_empty_graph(graph_frames[1], 'Pressure', 'Pressure (Pa)')
+    plot_empty_graph(graph_frames[2], 'Temperature', 'Temperature (°C)')
+    plot_empty_graph(graph_frames[3], 'Accelerometer', 'Acceleration (m/s²)')
+    
+    if ani_list:
         for i, (ax, canvas) in enumerate(zip(axes, canvas_list)):
-            ylabel = 'Accelerometer_data' if i == 0 else 'Gyro_Spin_Rate' if i == 1 else 'Altitude' if i == 2 else 'Temperature'
+            ylabel = ["Velocity", "Pressure", "Temperature", "Accelerometer"][i]
             ani = plot_live_data(ax, canvas, ylabel)
-            ani_list.append(ani)  # Keep reference to animations
+            ani_list.append(ani)
 
 
-def update_graph():
-    global ani_list
-    if ani_list:  # Check if the launch has already started
-        for i, (ax, canvas) in enumerate(zip(axes, canvas_list)):
-            ylabel = 'Accelerometer_data' if i == 0 else 'Gyro_Spin_Rate' if i == 1 else 'Altitude' if i == 2 else 'Temperature'
-            ani = plot_live_data(ax, canvas, ylabel)
-            ani_list.append(ani)  # Keep reference to animations
+def update_graph(axes):
+    print("Updating graph...")  # Debugging print statement
+    if len(real_time_data["time"]) == 0:
+        real_time_data["time"].append(time.time())
+    else:
+        real_time_data["time"].append(real_time_data["time"][-1] + 0.3)
+
+    for key in ["velocity", "pressure", "temperature", "accelerometer"]:
+        new_value = random.randint(0, 100)  # Replace with actual sensor values
+        real_time_data[key].append(new_value)
+        print(f"{key.capitalize()} updated: {new_value}")  # Print updated values
+
+    for ax, key in zip(axes, ["velocity", "pressure", "temperature", "accelerometer"]):
+        ax.clear()
+        ax.plot(real_time_data["time"], real_time_data[key], label=key.capitalize(), color='blue', linewidth=2)
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel(key.capitalize())
+        ax.grid(True)
+        ax.legend()
+
+
+def animate(i, axes, canvas):
+    print("Animating...")  # Debugging print
+    update_graph(axes)
+    canvas.draw()
+
+
+
+def display_dashboard(frame):
+    clear_frame(frame)
+    
+    figure, axes = plt.subplots(2, 2, figsize=(10, 6))
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=0.2, hspace=0.2)
+    
+    canvas = FigureCanvasTkAgg(figure, frame)
+    canvas.get_tk_widget().pack(fill='both', expand=True)
+    
+    global ani
+    ani = FuncAnimation(figure, animate, fargs=(axes, canvas), interval=300, save_count=100)
+
 
 def plot_empty_graph(frame, title, ylabel):
-    '''Plot empty graph with just axes, no data'''
     fig, ax = plt.subplots(figsize=(4, 3))
     ax.set_title(title, fontsize=14, color='white')
-    ax.set_ylabel(ylabel, fontsize=12, color='white')
-    ax.set_xlabel("Time (s)", fontsize=12, color='white')
+    ax.set_ylabel(f"Unit of {ylabel}", fontsize=12, color='white')
+    ax.set_xlabel("Value", fontsize=12, color='white')
+    
     ax.set_facecolor('#000000')
     fig.patch.set_facecolor('#000000')
-    ax.grid(True, color='gray', linestyle='--', linewidth=0.5)
+    ax.grid(True, color='gray', linestyle='--', linewidth=0.5, alpha=0.6)
     ax.tick_params(axis='both', colors='white')
 
-    # Create a canvas for the empty plot
-    canvas = FigureCanvasTkAgg(fig, master=frame)
+    canvas = FigureCanvasTkAgg(fig, master=frame) 
     canvas.draw()
     canvas.get_tk_widget().pack(fill='both', expand=True)
-
-    # Store for future use in launch (as placeholder for plotting data)
+    
     axes.append(ax)
     canvas_list.append(canvas)
 
-def plot_live_data(ax, canvas, ylabel):
-    print(Values_Dictionaries)
-    '''Plot live data on the graph after launch using animation'''
-    # x = np.arange(0, 10, 1)  # Time steps
-    x = Values_Dictionaries["GNSS_Time"]
-    if ylabel == 'Accelerometer_data':
-        val = (Values_Dictionaries['Accelerometer_data']).split(':')
-        y = int(val[0])
-    elif ylabel == 'Gyro_Spin_Rate':
-        val = (Values_Dictionaries['Gyro_Spin_Rate']).split(':')
-        y = int(val[0])
-    else:
-        y = float(Values_Dictionaries[ylabel])
 
-    line, = ax.plot(x, y, linestyle='-', color='cyan', linewidth=2)
+def plot_live_data(ax, canvas, ylabel):
+    """Dynamically update live graphs"""
+    x = time.time()
+    y = float(Values_Dictionaries.get(ylabel.lower(), 0))
+
+    line, = ax.plot([x], [y], linestyle='-', color='cyan', linewidth=2)
     fig = ax.get_figure()
 
     def update(frame):
-        line.set_ydata([y])
+        new_x = time.time()
+        new_y = float(Values_Dictionaries.get(ylabel.lower(), 0))
+        line.set_xdata([new_x])
+        line.set_ydata([new_y])
         ax.relim()
         ax.autoscale_view()
         canvas.draw()
 
-    ani = FuncAnimation(fig, update, interval=1000)
+    ani = FuncAnimation(fig, update, interval=1000, save_count=100, cache_frame_data=False)
+
     return ani
 
 #
